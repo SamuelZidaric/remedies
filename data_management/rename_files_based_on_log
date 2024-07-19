@@ -1,0 +1,19 @@
+import os
+import pandas as pd
+
+def rename_files_based_on_log(folder_path):
+    log_file_path = os.path.join(folder_path, 'rename_log.csv')
+    log_df = pd.read_csv(log_file_path)
+    
+    for _, row in log_df.iterrows():
+        original_file_path = os.path.join(folder_path, row['Original Filename'])
+        new_file_path = os.path.join(folder_path, row['New Filename'])
+        try:
+            os.rename(original_file_path, new_file_path)
+            print(f"Renamed '{row['Original Filename']}' to '{row['New Filename']}'")
+        except Exception as e:
+            print(f"Failed to rename '{row['Original Filename']}': {e}")
+
+# Usage
+folder_path = 'Z:/Clienti/progetti/remedies/emodnet_monitoring/monitoring_by_nation/france'
+rename_files_based_on_log(folder_path)
