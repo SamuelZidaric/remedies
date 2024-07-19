@@ -1,0 +1,44 @@
+import os
+import pandas as pd
+
+def create_beach_code_name_list(folder_path, output_file_path):
+    beach_entries = {}
+
+    for root, dirs, files in os.walk(folder_path):
+        for filename in files:
+            if filename.endswith(".xlsx"):
+                file_path = os.path.join(root, filename)
+                try:
+                    # Read the Excel file content
+                    excel_file = pd.ExcelFile(file_path)
+                    if 'Beaches' in excel_file.sheet_names:
+                        beaches_df = pd.read_excel(file_path, sheet_name='Beaches')
+                        
+                        for _, row in beaches_df.iterrows():
+                            beach_code = row['BeachCode'].lower()
+                            beach_name = row['BeachName']
+                            country = row['Country']
+                            if beach_code in beach_entries:
+                                beach_entries[beach_code]['FileCount'] += 1
+                            else:
+                                beach_entries[beach_code] = {
+                                    'BeachName': beach_name,
+                                    'Country': country,
+                                    'FileCount': 1
+                                }
+                    else:
+                        print(f"Skipped '{filename}': 'Beaches' sheet not found")
+                except Exception as e:
+                    print(f"Failed to process '{filename}': {e}")
+
+    # Create a DataFrame and save it to CSV
+    beach_df = pd.DataFrame.from_dict(beach_entries, orient='index')
+    beach_df.reset_index(inplace=True)
+    beach_df.rename(columns={'index': 'BeachCode'}, inplace=True)
+    beach_df.to_csv(output_file_path, index=False)
+    print(f"Beach codes and names list saved to {output_file_path}")
+
+# Usage
+folder_path = 'Z:/Clienti/progetti/remedies/emodnet_monitoring/monitoring_by_nation'  # Change this to your folder path
+output_file_path = os.path.join(folder_path, 'beach_code_name_list.csv')
+create_beach_code_name_list(folder_path, output_file_path)
