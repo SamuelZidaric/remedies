@@ -1,0 +1,51 @@
+import os
+import pandas as pd
+from datetime import datetime
+
+def parse_date(date_value):
+    if isinstance(date_value, pd.Timestamp):
+        return date_value
+    if isinstance(date_value, str):
+        for fmt in ('%Y-%m-%d', '%d/%m/%Y', '%m/%d/%Y'):
+            try:
+                return datetime.strptime(date_value, fmt)
+            except ValueError:
+                continue
+    raise ValueError(f"Date format for '{date_value}' not recognized")
+
+def create_rename_log(folder_path):
+    log_entries = []
+    log_file_path = os.path.join(folder_path, 'rename_log.csv')
+    
+    for filename in os.listdir(folder_path):
+        if filename.endswith(".xlsx"):
+            file_path = os.path.join(folder_path, filename)
+            try:
+                excel_file = pd.ExcelFile(file_path)
+                if 'Beaches' in excel_file.sheet_names and 'Surveys' in excel_file.sheet_names:
+                    beaches_df = pd.read_excel(file_path, sheet_name='Beaches')
+                    surveys_df = pd.read_excel(file_path, sheet_name='Surveys')
+
+                    beach_code = beaches_df['BeachCode'].iloc[0].lower()
+                    survey_date_value = surveys_df['SurveyDate'].iloc[0]
+                    survey_code = surveys_df['SurveyCode'].iloc[0]
+
+                    # Parse the survey date
+                    survey_date = parse_date(survey_date_value)
+                    formatted_survey_date = survey_date.strftime('%Y%m%d')
+
+                    new_filename = f"{beach_code}_{formatted_survey_date}_{survey_code}.xlsx"
+                    
+                    log_entries.append((filename, new_filename))
+                else:
+                    print(f"Skipped '{filename}': Required sheets not found")
+            except Exception as e:
+                print(f"Failed to process '{filename}': {e}")
+
+    log_df = pd.DataFrame(log_entries, columns=['Original Filename', 'New Filename'])
+    log_df.to_csv(log_file_path, index=False)
+    print(f"Log file created at {log_file_path}")
+
+# Usage
+folder_path = 'Z:/Clienti/progetti/remedies/emodnet_monitoring/monitoring_by_nation/france'
+create_rename_log(folder_path)
